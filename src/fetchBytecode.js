@@ -1,7 +1,7 @@
 const Web3 = require('web3');
 
 // Create a new instance of Web3 with the HttpProvider
-const web3 = new Web3(new Web3.providers.HttpProvider('https://glc-dataseed.glscan.io'));
+const web3 = new Web3(new Web3.providers.HttpProvider('https://gtc-dataseed.gtcscan.io'));
 
 
 
@@ -39,7 +39,7 @@ async function getOnChainBytecode(contractAddress) {
 }
 
 // Example: Replace with an actual transaction hash of a contract creation
-const txHash = '0xff10a9d2e4cc2c197781446daac8031a67053122e239333915eb78b85aa79938';  // Replace with an actual transaction hash
+const txHash = '0x92f464add8eef4f38813cde5acfa0429707b8e865fa0565ff63af3eb9bd33d2c';  // Replace with an actual transaction hash
 
 // Fetch the contract address from the transaction hash and then fetch the bytecode
 getContractAddressFromTxHash(txHash).then(contractAddress => {

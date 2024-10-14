@@ -73,6 +73,7 @@ async function main() {
     console.log("Waiting for deployment to be mined...");
     await myContract.waitForDeployment();
 
+   
     
 
      if (hre.network.name !== "hardhat" && hre.network.name !== "gtc") {

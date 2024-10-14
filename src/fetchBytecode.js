@@ -14,6 +14,7 @@ async function getContractAddressFromTxHash(txHash) {
         // Check if the transaction created a contract
         if (receipt && receipt.contractAddress) {
             console.log('Contract Address:', receipt.contractAddress);
+            console.log('Transaction Data:', tx.data);
             return receipt.contractAddress;
         } else {
             console.error('No contract address found for this transaction hash.');
@@ -39,7 +40,7 @@ async function getOnChainBytecode(contractAddress) {
 }
 
 // Example: Replace with an actual transaction hash of a contract creation
-const txHash = '0x92f464add8eef4f38813cde5acfa0429707b8e865fa0565ff63af3eb9bd33d2c';  // Replace with an actual transaction hash
+const txHash = '0x8946019549c6286678b39881c0440a33f9de4d6e19f33945d5a9e8c4f7b5f82d';  // Replace with an actual transaction hash
 
 // Fetch the contract address from the transaction hash and then fetch the bytecode
 getContractAddressFromTxHash(txHash).then(contractAddress => {

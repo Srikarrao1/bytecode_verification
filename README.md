@@ -1,13 +1,20 @@
-# Sample Hardhat Project
+Bytecode Verification Tool
+This tool verifies that both the local bytecode and on-chain bytecode of a smart contract match the contract's ABI (Application Binary Interface). It's useful for ensuring that the deployed contract matches the expected functionality defined in the ABI.
+Features
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a Hardhat Ignition module that deploys that contract.
+Extracts function selectors from the contract ABI
+Extracts function selectors from both local and on-chain bytecode
+Compares selectors to verify bytecode consistency with ABI
+Provides detailed output on verification results
 
-Try running some of the following tasks:
+Prerequisites
 
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat ignition deploy ./ignition/modules/Lock.js
+Node.js (version 12.0.0 or higher recommended)
+npm (usually comes with Node.js)
+
+Installation
+
+Clone this repository or download the script files.
+Navigate to the project directory in your terminal.
+
 ```

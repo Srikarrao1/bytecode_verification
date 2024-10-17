@@ -1,4 +1,6 @@
-Bytecode Verification Tool
+**Bytecode Verification Tool**
+
+
 This tool verifies that both the local bytecode and on-chain bytecode of a smart contract match the contract's ABI (Application Binary Interface). It's useful for ensuring that the deployed contract matches the expected functionality defined in the ABI.
 Features
 
@@ -17,4 +19,3 @@ Installation
 Clone this repository or download the script files.
 Navigate to the project directory in your terminal.
 
-```

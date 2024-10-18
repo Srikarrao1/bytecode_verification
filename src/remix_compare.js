@@ -394,61 +394,58 @@ const abi =
 // const path = require('path');
 // const { keccak256 } = require('ethereum-cryptography/keccak');
 
+// const path = require('path');
+// const keccak256 = require('js-sha3').keccak_256; // Import Keccak-256 from the js-sha3 library
+
+
 // Read the local bytecode from the compiled artifact
 const artifactPath = path.join(__dirname, '../artifacts/contracts/srikar.sol/APS.json');
 const artifact = JSON.parse(fs.readFileSync(artifactPath, 'utf8'));
-const localBytecode = artifact.deployedBytecode || artifact.bytecode;
+const localBytecode = artifact.deployedBytecode || artifact.bytecode; // Use deployed bytecode or fallback to bytecode
 
+
+const onChainBytecodeSelectors = extractFunctionSelectorsFromBytecode(remixBytecode);
+
+// Step 1: Extract function selectors from ABI
 function extractFunctionSelectorsFromABI(abi) {
-  return abi
-    .filter(item => item.type === 'function')
-    .map(fn => {
-      const functionSignature = `${fn.name}(${fn.inputs.map(i => i.type).join(',')})`;
-      return keccak256(Buffer.from(functionSignature)).toString('hex').slice(0, 8);
-    });
+    return abi
+        .filter(item => item.type === 'function') // Only process functions
+        .map(fn => {
+            const functionSignature = `${fn.name}(${fn.inputs.map(i => i.type).join(',')})`;
+            const selector = keccak256(functionSignature).slice(0, 8); // Get first 4 bytes (8 hex chars)
+            return selector;
+        });
 }
 
+// Step 2: Extract function selectors from bytecode
+// Extract the function selectors from bytecode (only first 4 bytes of each function call)
 function extractFunctionSelectorsFromBytecode(bytecode) {
-  const selectors = new Set();
-  const cleanBytecode = bytecode.replace('0x', '');
-  for (let i = 0; i < cleanBytecode.length - 8; i++) {
-    if (cleanBytecode.slice(i, i + 2) === '63') { // PUSH4 opcode
-      selectors.add(cleanBytecode.slice(i + 2, i + 10));
+    const selectors = [];
+    const cleanBytecode = bytecode.replace(/^0x/, ''); // Remove '0x' prefix if present
+    for (let i = 0; i < cleanBytecode.length; i += 64) { // Functions are usually padded to 32 bytes (64 hex chars)
+        const selector = cleanBytecode.slice(i, i + 8); // First 4 bytes of the function call (8 hex chars)
+        if (selector) {
+            selectors.push(selector);
+        }
     }
-  }
-  return Array.from(selectors);
+    return selectors;
 }
 
+// Step 3: Compare function selectors from ABI with bytecode
 function compareSelectors(abiSelectors, bytecodeSelectors) {
-  const matchedSelectors = abiSelectors.filter(sel => bytecodeSelectors.includes(sel));
-  return matchedSelectors.length === abiSelectors.length;
-}
-
-function verifyBytecode(abiSelectors, localBytecodeSelectors, onChainBytecodeSelectors) {
-  const localMatch = compareSelectors(abiSelectors, localBytecodeSelectors);
-  const onChainMatch = compareSelectors(abiSelectors, onChainBytecodeSelectors);
-
-  if (localMatch && onChainMatch) {
-    return "Bytecode verification successful. Both local and on-chain bytecodes match the ABI.";
-  } else if (!localMatch && !onChainMatch) {
-    return "Bytecode verification failed. Neither local nor on-chain bytecodes match the ABI.";
-  } else if (!localMatch) {
-    return "Bytecode verification failed. Local bytecode does not match the ABI.";
-  } else {
-    return "Bytecode verification failed. On-chain bytecode does not match the ABI.";
-  }
+    const unmatchedSelectors = abiSelectors.filter(sel => !bytecodeSelectors.includes(sel));
+    return unmatchedSelectors.length === 0
+        ? "All function selectors match between ABI and bytecode."
+        : `Unmatched selectors: ${unmatchedSelectors.join(', ')}`;
 }
 
 // Extract selectors
-const abiSelectors = extractFunctionSelectorsFromABI(abi);
 const localBytecodeSelectors = extractFunctionSelectorsFromBytecode(localBytecode);
-const onChainBytecodeSelectors = extractFunctionSelectorsFromBytecode(remixBytecode);
+const abiSelectors = extractFunctionSelectorsFromABI(artifact.abi);
 
-// Verify bytecode and log result
-console.log(verifyBytecode(abiSelectors, localBytecodeSelectors, onChainBytecodeSelectors));
+// Compare and log results
+console.log("Comparing Local Bytecode with ABI:");
+console.log(compareSelectors(abiSelectors, localBytecodeSelectors));
 
-// Optionally, you can still log the individual comparisons if needed
-console.log("\nDetailed comparison:");
-console.log("Local Bytecode with ABI:", compareSelectors(abiSelectors, localBytecodeSelectors) ? "Match" : "Mismatch");
-console.log("On-Chain Bytecode with ABI:", compareSelectors(abiSelectors, onChainBytecodeSelectors) ? "Match" : "Mismatch");
-// extractFunctionSignatures(localBytecode, remixBytecode, abi);
+console.log("Comparing On-Chain Bytecode with ABI:");
+console.log(compareSelectors(abiSelectors, onChainBytecodeSelectors));

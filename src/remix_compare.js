@@ -394,31 +394,30 @@ const abi =
 // Load the contract artifact
 const artifactPath = path.join(__dirname, '../artifacts/contracts/srikar.sol/APS.json');
 const artifact = JSON.parse(fs.readFileSync(artifactPath, 'utf8'));
-const localBytecode = artifact.deployedBytecode || artifact.bytecode; // Use deployed bytecode or fallback to bytecode
+const localBytecode = artifact.deployedBytecode || artifact.bytecode; 
 
 // Function to extract function selectors from ABI
 function extractFunctionSelectorsFromABI(abi) {
     return abi
-        .filter(item => item.type === 'function') // Only process functions
+        .filter(item => item.type === 'function')
         .map(fn => {
             const functionSignature = `${fn.name}(${fn.inputs.map(i => i.type).join(',')})`;
             const hash = keccak256(functionSignature); // Get the keccak256 hash
             
             // Get the first 4 bytes (8 hex chars) as selector
-            return `0x${hash.slice(2, 10)}`; // Add '0x' prefix
+            return `0x${hash.slice(2, 10)}`; 
         });
 }
 
 // Function to extract function selectors from bytecode
 function extractFunctionSelectorsFromBytecode(bytecode) {
     const selectors = [];
-    const cleanBytecode = bytecode.replace(/^0x/, ''); // Remove '0x' prefix if present
-
+    const cleanBytecode = bytecode.replace(/^0x/, ''); 
     // Iterate over the bytecode to extract function selectors
-    for (let i = 0; i < cleanBytecode.length; i += 64) { // Functions are usually padded to 32 bytes (64 hex chars)
-        const selector = cleanBytecode.slice(i, i + 8); // First 4 bytes of the function call (8 hex chars)
+    for (let i = 0; i < cleanBytecode.length; i += 64) { 
+        const selector = cleanBytecode.slice(i, i + 8); 
         if (selector) {
-            selectors.push(`0x${selector}`); // Add '0x' prefix
+            selectors.push(`0x${selector}`); 
         }
     }
     return selectors;
@@ -438,8 +437,8 @@ const abiSelectors = extractFunctionSelectorsFromABI(artifact.abi);
 // Step 2: Extract function selectors from local bytecode
 const localBytecodeSelectors = extractFunctionSelectorsFromBytecode(localBytecode);
 
-// Step 3: Extract function selectors from on-chain bytecode (you need to define this variable)
-const onChainBytecodeSelectors = extractFunctionSelectorsFromBytecode(remixBytecode); // Ensure remixBytecode is defined
+// Step 3: Extract function selectors from on-chain bytecode 
+const onChainBytecodeSelectors = extractFunctionSelectorsFromBytecode(remixBytecode); 
 
 // Compare and log results
 console.log("Comparing Local Bytecode with ABI:");

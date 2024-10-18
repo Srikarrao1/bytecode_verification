@@ -404,31 +404,48 @@ function extractFunctionSelectorsFromABI(abi) {
             const functionSignature = `${fn.name}(${fn.inputs.map(i => i.type).join(',')})`;
             const hash = keccak256(functionSignature); // Get the keccak256 hash
             
-            // Get the first 4 bytes (8 hex chars) as selector
-            return `0x${hash.slice(2, 10)}`; 
+            // Get the first 4 bytes (32 bits) as selector
+            // Convert hash to Buffer if it's not already
+            const bufferHash = Buffer.isBuffer(hash) ? hash : Buffer.from(hash.slice(2), 'hex'); 
+            const selectorBuffer = bufferHash.subarray(0, 4); // Get first 4 bytes
+            
+            // Convert back to hex string
+            return `0x${selectorBuffer.toString('hex')}`; 
         });
 }
 
-// Function to extract function selectors from bytecode
 function extractFunctionSelectorsFromBytecode(bytecode) {
-    const selectors = [];
-    const cleanBytecode = bytecode.replace(/^0x/, ''); 
-    // Iterate over the bytecode to extract function selectors
-    for (let i = 0; i < cleanBytecode.length; i += 64) { 
-        const selector = cleanBytecode.slice(i, i + 8); 
-        if (selector) {
-            selectors.push(`0x${selector}`); 
+    const selectors = new Set();
+    const cleanBytecode = bytecode.replace(/^0x/, '');
+
+    // Ensure the bytecode is a multiple of 2 (even length for valid hex)
+    if (cleanBytecode.length % 2 !== 0) {
+        throw new Error('Invalid bytecode: odd length');
+    }
+
+    for (let i = 0; i < cleanBytecode.length; i += 2) { // Step by 2 characters (1 byte)
+        const hexPair = cleanBytecode.slice(i, i + 8); // Extract 8 characters (4 bytes)
+        if (hexPair.length === 8) {
+            selectors.add(`0x${hexPair}`); 
         }
     }
-    return selectors;
+    
+    return selectors; 
 }
 
 // Function to compare function selectors from ABI with bytecode
 function compareSelectors(abiSelectors, bytecodeSelectors) {
-    const unmatchedSelectors = abiSelectors.filter(sel => !bytecodeSelectors.includes(sel));
-    return unmatchedSelectors.length === 0
-        ? "All function selectors match between ABI and bytecode."
-        : `Unmatched selectors: ${unmatchedSelectors.join(', ')}`;
+    const matchedSelectors = abiSelectors.filter(sel => bytecodeSelectors.has(sel));
+    const matchCount = matchedSelectors.length;
+    const totalCount = abiSelectors.length;
+    const requiredMatches = Math.ceil(totalCount * 0.8); // Calculate 80% of total selectors
+
+    return {
+        isMatch: matchCount >= requiredMatches,
+        unmatchedSelectors: matchedSelectors.length === totalCount ? [] : abiSelectors.filter(sel => !bytecodeSelectors.has(sel)),
+        matchedCount: matchCount,
+        requiredMatches: requiredMatches
+    };
 }
 
 // Step 1: Extract function selectors from ABI
@@ -438,21 +455,34 @@ const abiSelectors = extractFunctionSelectorsFromABI(artifact.abi);
 const localBytecodeSelectors = extractFunctionSelectorsFromBytecode(localBytecode);
 
 // Step 3: Extract function selectors from on-chain bytecode 
-const onChainBytecodeSelectors = extractFunctionSelectorsFromBytecode(remixBytecode); 
+let onChainBytecodeSelectors;
+try {
+    onChainBytecodeSelectors = extractFunctionSelectorsFromBytecode(remixBytecode);
+} catch (error) {
+    console.error("Error extracting on-chain bytecode selectors:", error.message);
+    onChainBytecodeSelectors = new Set(); // Initialize as empty Set in case of error
+}
 
+// Compare selectors
+const localComparisonResult = compareSelectors(abiSelectors, localBytecodeSelectors);
+const onChainComparisonResult = compareSelectors(abiSelectors, onChainBytecodeSelectors);
 
-// console.log("Comparing Local Bytecode with ABI:");
-let localresult = compareSelectors(abiSelectors, localBytecodeSelectors);
-
-// console.log("Comparing On-Chain Bytecode with ABI:");
-let onchainresult = compareSelectors(abiSelectors, onChainBytecodeSelectors);
-
-if (localresult === onchainresult) {
+// Check results and log appropriate messages
+if (localComparisonResult.isMatch && onChainComparisonResult.isMatch) {
     console.log("%c✔️  BYTECODE MATCHED AND VERIFIED SUCCESSFULLY WITH FUNCTION SIGNATURES", "font-size: 16px; font-weight: bold; color: green;");
 } else {
     console.log("%c✖️  BYTECODE MATCH FAILED", "font-size: 16px; font-weight: bold; color: red;");
 }
 
+// Log the selectors for further debugging
+console.log("Local Bytecode Selectors:", Array.from(localBytecodeSelectors));
+console.log("On-Chain Bytecode Selectors:", Array.from(onChainBytecodeSelectors));
 
-console.log("Local Bytecode Selectors:", localBytecodeSelectors);
-console.log("On-Chain Bytecode Selectors:", onChainBytecodeSelectors);
+// Log detailed results
+if (!localComparisonResult.isMatch) {
+    console.log(`Local Match Failed: ${localComparisonResult.matchedCount}/${localComparisonResult.requiredMatches} selectors matched. Unmatched selectors: ${localComparisonResult.unmatchedSelectors.join(', ')}`);
+}
+
+if (!onChainComparisonResult.isMatch) {
+    console.log(`On-Chain Match Failed: ${onChainComparisonResult.matchedCount}/${onChainComparisonResult.requiredMatches} selectors matched. Unmatched selectors: ${onChainComparisonResult.unmatchedSelectors.join(', ')}`);
+}

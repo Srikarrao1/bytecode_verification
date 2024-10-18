@@ -441,8 +441,6 @@ const localBytecodeSelectors = extractFunctionSelectorsFromBytecode(localBytecod
 const onChainBytecodeSelectors = extractFunctionSelectorsFromBytecode(remixBytecode); 
 
 
-
-// // Compare and log results
 // console.log("Comparing Local Bytecode with ABI:");
 let localresult = compareSelectors(abiSelectors, localBytecodeSelectors);
 
@@ -450,9 +448,9 @@ let localresult = compareSelectors(abiSelectors, localBytecodeSelectors);
 let onchainresult = compareSelectors(abiSelectors, onChainBytecodeSelectors);
 
 if (localresult === onchainresult) {
-    console.log("✔️ **Bytecode matched and verified successfully with function signatures**");
+    console.log("%c✔️  BYTECODE MATCHED AND VERIFIED SUCCESSFULLY WITH FUNCTION SIGNATURES", "font-size: 16px; font-weight: bold; color: green;");
 } else {
-    console.log("✖️ **Bytecode match failed**");
+    console.log("%c✖️  BYTECODE MATCH FAILED", "font-size: 16px; font-weight: bold; color: red;");
 }
 
 
